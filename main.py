@@ -4,6 +4,8 @@ import os
 import socks
 from telethon import TelegramClient, events
 
+from tools import onMessage
+
 current_directory = os.path.dirname(os.path.abspath(__file__))
 config_path = os.path.join(current_directory, 'config.json')
 
@@ -44,13 +46,28 @@ async def client_main():
     await client.run_until_disconnected()
 
 
-def onMessage(text: str):
-    pass
+# 指令统一处理
+def onAction(text: str, user_id: str) -> str:
+    fullCmd = text.split(' ')
+    cmd = fullCmd[0]
+    if cmd == '#增加众筹':
+        reply, status = onMessage.addItem(fullCmd[1:], user_id)
+        if status:
+            return '执行成功，%s' % reply
+        else:
+            return '执行失败，%s' % reply
 
 
 @client.on(events.NewMessage())
 async def event_handler(event):
-    await event.reply(event.message.message)
+    # 获取message内容
+    raw_text = event.message.message
+    user_id = event.message.peer_id.user_id
+    if raw_text.find('#') == 0:
+        replyMsg = onAction(raw_text, user_id)
+        await event.reply(replyMsg)
+    else:
+        await event.reply('消息格式不正确，回复 #帮助 获取指令')
 
 
 if __name__ == '__main__':
