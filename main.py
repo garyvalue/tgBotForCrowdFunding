@@ -108,6 +108,9 @@ async def event_handler(event):
     raw_text = event.message.message
     user_id = str(event.message.peer_id.user_id)
     if raw_text.find('#') == 0 or raw_text.find('/') == 0:
+        if raw_text == '#帮助' or raw_text == '/help':
+            await event.reply('https://telegra.ph/%E6%8C%87%E4%BB%A4%E8%AF%B4%E6%98%8E-12-10')
+            return
         log.debug(f'接到消息：{event.message}')
         replyMsg = onAction(raw_text, user_id)
         await event.reply(replyMsg)
