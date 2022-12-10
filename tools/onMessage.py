@@ -139,3 +139,11 @@ def getItemByWd(args: list, limit: int) -> (str, bool):
             _id = item[1]
             rep += f'\n{title} 编号{_id}'
         return rep, True
+
+
+def getUrlByid(args: list) -> (str, bool):
+    if len(args) < 1:
+        return '参数不足', False
+    _id = args[0]
+    url = db.getUrlById(_id)
+    return url, True

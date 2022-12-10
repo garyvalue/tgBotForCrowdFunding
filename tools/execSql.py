@@ -160,6 +160,10 @@ class ReadSQL:
         self.conn.close()
         return
 
+    def getUrlById(self, _id) -> str:
+        self.cur.execute(f'select link from "sponsor" where id={_id}')
+        return self.cur.fetchone()[0]
+
 
 if __name__ == '__main__':
     test = ReadSQL('./data/data.db')

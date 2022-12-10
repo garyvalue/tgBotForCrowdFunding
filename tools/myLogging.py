@@ -13,7 +13,7 @@ class FrameLog:
         self.logger.setLevel(level=logging.DEBUG)
         # 设置日志路径以及日志文件名
         self.log_time = time.strftime('%Y_%m_%d')
-        self.log_path = os.getcwd() + '\Logs/'
+        self.log_path = os.getcwd() + '/Logs/'
         if not os.path.exists(self.log_path):
             os.mkdir(self.log_path)
         self.log_name = self.log_path + self.log_time + '.log'
@@ -50,8 +50,9 @@ class FrameLog:
         self.cmd_handler.close()
 
     def log(self):
-        self.set_filehandler()
-        self.set_cmd_handler()
+        if not self.logger.handlers:
+            self.set_filehandler()
+            self.set_cmd_handler()
         # 返回日志器
         return self.logger
 

@@ -4,6 +4,7 @@ import time
 
 import socks
 from telethon import TelegramClient, events
+import telethon.tl.types as tgType
 
 import tools.tool
 from tools import onMessage
@@ -99,6 +100,8 @@ def onAction(text: str, user_id: str) -> str:
         elif cmd == '#搜索未发车':
             limit = 0
         reply, status = onMessage.getItemByWd(fullCmd[1:], limit)
+    elif cmd == '#查询链接':
+        reply, status = onMessage.getUrlByid(fullCmd[1:])
     return tools.tool.reReply(reply, status, user_id)
 
 
@@ -106,12 +109,19 @@ def onAction(text: str, user_id: str) -> str:
 async def event_handler(event):
     # 获取message内容
     raw_text = event.message.message
-    user_id = str(event.message.peer_id.user_id)
     if raw_text.find('#') == 0 or raw_text.find('/') == 0:
+        log.debug(f'接到消息：{event.message}')
+        # 判断消息来源是群组还是私聊
+        isPrivate = True
+        if type(event.message.peer_id) == tgType.PeerChannel:
+            isPrivate = False
+        if isPrivate:
+            user_id = str(event.message.peer_id.user_id)
+        else:
+            user_id = str(event.message.from_id.user_id)
         if raw_text == '#帮助' or raw_text == '/help':
             await event.reply('https://telegra.ph/%E6%8C%87%E4%BB%A4%E8%AF%B4%E6%98%8E-12-10')
             return
-        log.debug(f'接到消息：{event.message}')
         replyMsg = onAction(raw_text, user_id)
         await event.reply(replyMsg)
 
