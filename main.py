@@ -7,6 +7,7 @@ from telethon import TelegramClient, events
 
 import tools.tool
 from tools import onMessage
+from tools.myLogging import FrameLog
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
 config_path = os.path.join(current_directory, 'config.json')
@@ -26,7 +27,7 @@ if proxy_port is not None:
         bot_token=bot_token)
 else:
     client = TelegramClient('anon', api_id, api_hash).start(bot_token=bot_token)
-
+log = FrameLog().log()
 # 用于记录用户上一次操作时间
 timeMap = {}
 
@@ -36,14 +37,11 @@ timeMap = {}
 
 # 展示登陆的信息
 def show_my_inf(me):
-    print("-----****************-----")
-    print("Name:", me.username)
-    print("ID:", me.id)
-    print("-----login successful-----")
+    log.info(f"-----****************-----\nName:{me.username}\nId:{me.id}\n-----login successful-----")
 
 
 async def client_main():
-    print("-client-main-")
+    log.debug("-client-main-")
     me = await client.get_me()
     show_my_inf(me)
     entity = await client.get_entity(master)
@@ -72,6 +70,7 @@ def canContinue(user_id) -> (bool, int):
 # 指令统一处理
 def onAction(text: str, user_id: str) -> str:
     status, waitTime = canContinue(user_id)
+    log.info(f'用户{user_id}执行指令：{text} 放行：{status}')
     if not status:
         return '还需等待%d秒后才可执行操作' % waitTime
     fullCmd = text.split(' ')
@@ -99,8 +98,8 @@ def onAction(text: str, user_id: str) -> str:
             limit = 1
         elif cmd == '#搜索未发车':
             limit = 0
-        reply, status = onMessage.getItemByWd(fullCmd[1:],limit)
-    return tools.tool.reReply(reply, status)
+        reply, status = onMessage.getItemByWd(fullCmd[1:], limit)
+    return tools.tool.reReply(reply, status, user_id)
 
 
 @client.on(events.NewMessage())
@@ -109,6 +108,7 @@ async def event_handler(event):
     raw_text = event.message.message
     user_id = str(event.message.peer_id.user_id)
     if raw_text.find('#') == 0 or raw_text.find('/') == 0:
+        log.debug(f'接到消息：{event.message}')
         replyMsg = onAction(raw_text, user_id)
         await event.reply(replyMsg)
 
