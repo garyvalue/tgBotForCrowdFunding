@@ -17,8 +17,17 @@ create table "finish" (
   password VARCHAR(50)
 )
 '''
+createSqlJoin = '''
+create table "join" (
+  id int NOT NULL,
+  user VARCHAR(100) NOT NULL
+)
+'''
 insertSponsorSql = 'INSERT INTO sponsor VALUES (\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',%d, null)'
 delSponsorSql = 'DELETE FROM sponsor WHERE id=\'%s\''
+finishSponsorSql = 'UPDATE sponsor SET status=1 WHERE id=\'%s\''
 insertFinishSql = 'INSERT INTO finish VALUES (\'%s\',\'%s\',\'%s\',\'%s\')'
 updateFinishSql = 'UPDATE finish SET link=\'%s\',pwd=\'%s\',password=\'%s\' WHERE id=\'%s\''
 delFinishSql = 'DELETE FROM finish WHERE id=\'%s\''
+joinItemSql = 'INSERT INTO join VALUES (\'%s\',\'%s\')'
+exitItemSql = 'DELETE FROM join WHERE id=\'%s\' AND user=\'%s\''

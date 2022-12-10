@@ -87,6 +87,19 @@ def onAction(text: str, user_id: str) -> str:
         # Todo 发车成功后，通知所有成员
     elif cmd == '#我发起的众筹':
         reply, status = onMessage.getAllItem(fullCmd[1:], user_id)
+    elif cmd == '#参加众筹':
+        reply, status = onMessage.joinItem(fullCmd[1:], user_id)
+    elif cmd == '#退出众筹':
+        reply, status = onMessage.exitItem(fullCmd[1:], user_id)
+    elif cmd == '#我参与的众筹':
+        reply, status = onMessage.getAllJoin(fullCmd[1:], user_id)
+    elif cmd == '#搜索' or cmd == '#搜索已发车' or cmd == '#搜索未发车':
+        limit = None
+        if cmd == '#搜索已发车':
+            limit = 1
+        elif cmd == '#搜索未发车':
+            limit = 0
+        reply, status = onMessage.getItemByWd(fullCmd[1:],limit)
     return tools.tool.reReply(reply, status)
 
 
@@ -98,8 +111,6 @@ async def event_handler(event):
     if raw_text.find('#') == 0 or raw_text.find('/') == 0:
         replyMsg = onAction(raw_text, user_id)
         await event.reply(replyMsg)
-    else:
-        await event.reply('消息格式不正确，回复 /help 获取指令')
 
 
 if __name__ == '__main__':

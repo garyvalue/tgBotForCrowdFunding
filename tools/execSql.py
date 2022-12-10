@@ -19,6 +19,7 @@ class ReadSQL:
         if not existDb:
             self.cur.execute(const.createSqlSponsor)
             self.cur.execute(const.createSqlFinish)
+            self.cur.execute(const.createSqlJoin)
             self.conn.commit()
 
     # 发起众筹，返回值分别为执行状态和异常原因
@@ -47,6 +48,7 @@ class ReadSQL:
             return rep[0]
         else:
             return '0'
+
     def delSponsor(self, _id):
         try:
             self.cur.execute(const.delSponsorSql % _id)
@@ -56,7 +58,8 @@ class ReadSQL:
         except sqlite3.OperationalError as e:
             return False, repr(e)
         return True, None
-    def getAllFromSponsor(self, user_id: str, limit: 10) -> list:
+
+    def getAllFromSponsor(self, user_id: str, limit: int) -> list:
         self.cur.execute(
             'select title,id from "sponsor" where author="%s" order by id desc limit "%s"' % (user_id, limit))
         rep = self.cur.fetchall()
@@ -77,6 +80,7 @@ class ReadSQL:
         try:
             if not cover:
                 self.cur.execute(const.insertFinishSql % (_id, link, pwd, password))
+                self.cur.execute(const.finishSponsorSql % _id)
             else:
                 self.cur.execute(const.updateFinishSql % (_id, link, pwd, password))
             self.conn.commit()
@@ -95,6 +99,57 @@ class ReadSQL:
         except sqlite3.OperationalError as e:
             return False, repr(e)
         return True, None
+
+    def joinItem(self, _id: int, user_id: str) -> (bool, str):
+        try:
+            self.cur.execute(const.joinItemSql % (_id, user_id))
+            self.conn.commit()
+        except sqlite3.IntegrityError as e:
+            return False, repr(e)
+        except sqlite3.OperationalError as e:
+            return False, repr(e)
+        return True, None
+
+    def exitItem(self, _id: int, user_id: str) -> (bool, str):
+        try:
+            self.cur.execute(const.exitItemSql % (_id, user_id))
+            self.conn.commit()
+        except sqlite3.IntegrityError as e:
+            return False, repr(e)
+        except sqlite3.OperationalError as e:
+            return False, repr(e)
+        return True, None
+
+    def getAllFromJoin(self, user_id: str, limit: int) -> list:
+        self.cur.execute(
+            'select id from "join" where user="%s" order by id desc limit "%s"' % (user_id, limit))
+        rep = self.cur.fetchall()
+        if rep is None:
+            return []
+        else:
+            return rep
+
+    def getTitleById(self, _id) -> str:
+        self.cur.execute(
+            'select title from "sponsor" where id="%s"' % _id)
+        return self.cur.fetchone()[0]
+
+    def getNumById(self, _id) -> str:
+        self.cur.execute('select count(*) from join where id="%s"')
+        return self.cur.fetchone()[0]
+
+    def getItemByWd(self, wd: str, limit: int):
+        if limit is None:
+            # 无限制搜索
+            strSQl = f'select title,id,status from "sponsor" where title like "%{wd}%"'
+        else:
+            strSQl = f'select title,id from "sponsor" where title like "%{wd}%" AND status="{limit}"'
+        self.cur.execute(strSQl)
+        rep = self.cur.fetchall()
+        if rep is None:
+            return []
+        else:
+            return rep
 
     def getMaxId(self) -> int:
         self.cur.execute('select max(id) from "91hot"')

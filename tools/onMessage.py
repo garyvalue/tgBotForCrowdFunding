@@ -82,3 +82,60 @@ def checkAuth(_id: str, user_id: str) -> bool:
     # 校验操作者权限
     user = db.getUserFromSponsor(_id)
     return user == user_id
+
+
+def joinItem(args: list, user_id: str):
+    if len(args) < 1:
+        return '参数不足', False
+    _id = args[0]
+    if checkAuth(_id, user_id):
+        return '你是发起者，无需参与众筹', False
+    status, rep = db.joinItem(_id, user_id)
+    if not status:
+        tool.isError(rep)
+        return '未知错误，已通知管理员', False
+    return '参加成功', True
+
+
+def exitItem(args: list, user_id: str):
+    if len(args) < 1:
+        return '参数不足', False
+    _id = args[0]
+    status, rep = db.exitItem(_id, user_id)
+    if not status:
+        tool.isError(rep)
+        return '未知错误，已通知管理员', False
+    return '退出成功', True
+
+
+def getAllJoin(args: list, user_id: str):
+    limit = '10'
+    if len(args) > 1:
+        limit = args[0]
+    itemList = db.getAllFromJoin(user_id, limit)
+    if len(itemList) == 0:
+        return '未查询到你参与的众筹', False
+    else:
+        rep = ''
+        for item in itemList:
+            _id = item[0]
+            title = db.getTitleById(_id)
+            num = db.getNumById(_id)
+            rep += f'\n{title} 编号{_id} 当前参与人数{num}'
+        return rep, True
+
+
+def getItemByWd(args: list, limit: int) -> (str, bool):
+    if len(args) < 1:
+        return '参数不足', False
+    wd = args[0]
+    itemList = db.getItemByWd(wd, limit)
+    if len(itemList) == 0:
+        return '未查询到符合条件的众筹', False
+    else:
+        rep = ''
+        for item in itemList:
+            title = item[0]
+            _id = item[1]
+            rep += f'\n{title} 编号{_id}'
+        return rep, True
