@@ -1,33 +1,18 @@
-import json
-import os
 import time
 
-import socks
-from telethon import TelegramClient, events
 import telethon.tl.types as tgType
+from telethon import events
 
 import tools.tool
 from tools import onMessage
 from tools.myLogging import FrameLog
-
-current_directory = os.path.dirname(os.path.abspath(__file__))
-config_path = os.path.join(current_directory, 'config.json')
+from tools.tgClient import priClient
 
 # 配置处理开始
 # These example values won't work. You must get your own api_id and
 # api_hash from https://my.telegram.org, under API Development.
-with open(config_path, 'r', encoding='utf-8') as f:
-    config = json.load(f)
-api_id = config.get('api_id')
-api_hash = config.get('api_hash')
-bot_token = config.get('bot_token')
-master = config.get('master')
-proxy_port = config.get('proxy_port')
-if proxy_port is not None:
-    client = TelegramClient('anon', api_id, api_hash, proxy=(socks.SOCKS5, 'localhost', proxy_port)).start(
-        bot_token=bot_token)
-else:
-    client = TelegramClient('anon', api_id, api_hash).start(bot_token=bot_token)
+
+client = priClient.client
 log = FrameLog().log()
 # 用于记录用户上一次操作时间
 timeMap = {}
@@ -45,14 +30,13 @@ async def client_main():
     log.debug("-client-main-")
     me = await client.get_me()
     show_my_inf(me)
-    entity = await client.get_entity(master)
+    entity = await client.get_entity(priClient.master)
     await client.send_message(entity, 'Hello,my master')
     await client.run_until_disconnected()
 
 
 # 返回值为本次操作与上次操作的时间间隔
 def canContinue(user_id) -> (bool, int):
-    return True, 0
     nowTime = int(time.time())
     lastTime = timeMap.get(user_id, 0)
     if lastTime == 0:
@@ -60,16 +44,26 @@ def canContinue(user_id) -> (bool, int):
         return True, 0
     else:
         diffTime = nowTime - lastTime
-        if diffTime <= 30:
-            return False, 30 - diffTime
+        if diffTime <= 1:
+            return False, 1 - diffTime
         else:
             timeMap[user_id] = nowTime
             return True, 0
-    # Todo 限流，根据发车次数减少指令操作间隔
 
 
 # 指令统一处理
-def onAction(text: str, user_id: str) -> str:
+async def notifyFinish(args: list, userList: list):
+    _id = args[0]
+    link = args[1]
+    pwd = args[2]
+    password = args[3]
+    strReply = f'编号{_id}已发车\n链接：{link}\n提取码：{pwd}\n密码：{password}'
+    for user in userList:
+        entity = await client.get_entity(user)
+        await client.send_message(entity, strReply)
+
+
+async def onAction(text: str, user_id: str) -> str:
     status, waitTime = canContinue(user_id)
     log.info(f'用户{user_id}执行指令：{text} 放行：{status}')
     if not status:
@@ -84,10 +78,14 @@ def onAction(text: str, user_id: str) -> str:
         reply, status = onMessage.delItem(fullCmd[1:], user_id)
     elif cmd == '#发车' or cmd == '#强制发车':
         reply, status = onMessage.finishItem(fullCmd[1:], user_id, cmd == '#强制发车')
-        # Todo 发车成功后，通知所有成员
+        # Todo 批量发车
+        # 返回所有上车用户
+        if status:
+            userList = onMessage.getAllJoinById(fullCmd[1:])
+            await notifyFinish(fullCmd[1:], userList)
     elif cmd == '#我发起的众筹':
         reply, status = onMessage.getAllItem(fullCmd[1:], user_id)
-    elif cmd == '#参加众筹':
+    elif cmd == '#参加众筹' or cmd == '#参与众筹':
         reply, status = onMessage.joinItem(fullCmd[1:], user_id)
     elif cmd == '#退出众筹':
         reply, status = onMessage.exitItem(fullCmd[1:], user_id)
@@ -99,7 +97,7 @@ def onAction(text: str, user_id: str) -> str:
             limit = 1
         elif cmd == '#搜索未发车':
             limit = 0
-        reply, status = onMessage.getItemByWd(fullCmd[1:], limit)
+        reply, status = await onMessage.getItemByWd(fullCmd[1:], limit)
     elif cmd == '#查询链接':
         reply, status = onMessage.getUrlByid(fullCmd[1:])
     return tools.tool.reReply(reply, status, user_id)
@@ -122,7 +120,7 @@ async def event_handler(event):
         if raw_text == '#帮助' or raw_text == '/help':
             await event.reply('https://telegra.ph/%E6%8C%87%E4%BB%A4%E8%AF%B4%E6%98%8E-12-10')
             return
-        replyMsg = onAction(raw_text, user_id)
+        replyMsg = await onAction(raw_text, user_id)
         await event.reply(replyMsg)
 
 

@@ -1,3 +1,4 @@
+import datetime
 import os
 import sqlite3
 
@@ -79,7 +80,8 @@ class ReadSQL:
     def toFinish(self, _id: str, link: str, pwd: str, password: str, cover: bool):
         try:
             if not cover:
-                self.cur.execute(const.insertFinishSql % (_id, link, pwd, password))
+                self.cur.execute(
+                    const.insertFinishSql % (_id, link, pwd, password, datetime.datetime.now().strftime("%Y-%m-%d")))
                 self.cur.execute(const.finishSponsorSql % _id)
             else:
                 self.cur.execute(const.updateFinishSql % (_id, link, pwd, password))
@@ -138,12 +140,8 @@ class ReadSQL:
         self.cur.execute('select count(*) from join where id="%s"')
         return self.cur.fetchone()[0]
 
-    def getItemByWd(self, wd: str, limit: int):
-        if limit is None:
-            # 无限制搜索
-            strSQl = f'select title,id,status from "sponsor" where title like "%{wd}%"'
-        else:
-            strSQl = f'select title,id from "sponsor" where title like "%{wd}%" AND status="{limit}"'
+    def getItemByWd(self, wd: str):
+        strSQl = f'select * from "sponsor" where title like "%{wd}%"'
         self.cur.execute(strSQl)
         rep = self.cur.fetchall()
         if rep is None:
@@ -163,6 +161,10 @@ class ReadSQL:
     def getUrlById(self, _id) -> str:
         self.cur.execute(f'select link from "sponsor" where id={_id}')
         return self.cur.fetchone()[0]
+
+    def getAllFromJoinById(self, _id) -> list:
+        self.cur.execute(f'select user from "finish" where id={_id}')
+        return self.cur.fetchall()
 
 
 if __name__ == '__main__':

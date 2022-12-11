@@ -1,10 +1,11 @@
 from tools import execSql, tool
-
+from tools.tgClient import priClient
+client = priClient.client
 db = execSql.ReadSQL()
 
 
 def addItem(args: list, user_id: str) -> (str, bool):
-    # 增加众筹 <tltle> <link> <money> <datetime>
+    # 增加众筹 <title> <link> <money> <datetime>
     if len(args) < 4:
         return '参数不足', False
     title = args[0]
@@ -18,11 +19,11 @@ def addItem(args: list, user_id: str) -> (str, bool):
         if checkAuth(_id, user_id):
             return '已添加过相同资源，编号为%s' % _id, False
         else:
-            # Todo 自动上车
+            db.joinItem(_id, user_id)
             return '该资源已由他人发起众筹，已为你自动参与', True
     status, rep = db.insertItem(title, link, user_id, money, datetime)
     if not status:
-        tool.isError(rep)
+        tool.isError(rep, args)
         return '未知错误，已通知管理员', False
     return '编号为%s' % db.getIdFromSponsor(link), True
 
@@ -36,7 +37,7 @@ def delItem(args: list, user_id: str):
     else:
         status, rep = db.delSponsor(_id)
         if not status:
-            tool.isError(rep)
+            tool.isError(rep, args)
             return '未知错误，已通知管理员', False
         return '删除成功', True
 
@@ -57,7 +58,7 @@ def finishItem(args: list, user_id: str, cover: bool) -> (str, bool):
         return '该资源已发车，如需修改，请使用 #强制发车 ', False
     status, rep = db.toFinish(_id, link, pwd, password, cover and IsFinish)
     if not status:
-        tool.isError(rep)
+        tool.isError(rep, args)
         return '未知错误，已通知管理员', False
     return '发车成功', True
 
@@ -81,7 +82,7 @@ def getAllItem(args: list, user_id: str) -> (str, bool):
 def checkAuth(_id: str, user_id: str) -> bool:
     # 校验操作者权限
     user = db.getUserFromSponsor(_id)
-    return user == user_id
+    return user == user_id or user_id == priClient.master
 
 
 def joinItem(args: list, user_id: str):
@@ -92,7 +93,7 @@ def joinItem(args: list, user_id: str):
         return '你是发起者，无需参与众筹', False
     status, rep = db.joinItem(_id, user_id)
     if not status:
-        tool.isError(rep)
+        tool.isError(rep, args)
         return '未知错误，已通知管理员', False
     return '参加成功', True
 
@@ -103,7 +104,7 @@ def exitItem(args: list, user_id: str):
     _id = args[0]
     status, rep = db.exitItem(_id, user_id)
     if not status:
-        tool.isError(rep)
+        tool.isError(rep, args)
         return '未知错误，已通知管理员', False
     return '退出成功', True
 
@@ -125,19 +126,21 @@ def getAllJoin(args: list, user_id: str):
         return rep, True
 
 
-def getItemByWd(args: list, limit: int) -> (str, bool):
+async def getItemByWd(args: list, limit: int) -> (str, bool):
     if len(args) < 1:
         return '参数不足', False
     wd = args[0]
-    itemList = db.getItemByWd(wd, limit)
+    itemList = db.getItemByWd(wd)
     if len(itemList) == 0:
         return '未查询到符合条件的众筹', False
     else:
         rep = ''
+        # TODO 搜索时显示完整信息以及参与人数和预估金额
         for item in itemList:
             title = item[0]
-            _id = item[1]
-            rep += f'\n{title} 编号{_id}'
+            link = item[1]
+            author = await client.get_entity(int(item[2]))
+            rep += f'\n{title} 链接：{link} 发起者：#{author.username}'
         return rep, True
 
 
@@ -147,3 +150,12 @@ def getUrlByid(args: list) -> (str, bool):
     _id = args[0]
     url = db.getUrlById(_id)
     return url, True
+
+
+def getAllJoinById(args: list) -> list:
+    _id = args[0]
+    tmpList = db.getAllFromJoinById(_id)
+    userList = []
+    for item in tmpList:
+        userList.append(item[0])
+    return userList

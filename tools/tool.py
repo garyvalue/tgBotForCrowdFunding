@@ -11,6 +11,5 @@ def reReply(reply: str, status: bool, user_id: str) -> str:
         return '执行失败，%s' % reply
 
 
-def isError(rep):
-    # Todo 报错信息转发给主人
-    pass
+def isError(rep: str, args: list):
+    log.error(rep, args)
