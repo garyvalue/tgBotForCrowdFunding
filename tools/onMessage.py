@@ -1,5 +1,6 @@
 from tools import execSql, tool
 from tools.tgClient import priClient
+
 client = priClient.client
 db = execSql.ReadSQL()
 
@@ -102,6 +103,10 @@ def exitItem(args: list, user_id: str):
     if len(args) < 1:
         return '参数不足', False
     _id = args[0]
+    # 已发车的众筹不允许退出
+    status = int(db.getStatusById(_id))
+    if status:
+        return '已发车的众筹不允许退出', False
     status, rep = db.exitItem(_id, user_id)
     if not status:
         tool.isError(rep, args)
@@ -140,7 +145,18 @@ async def getItemByWd(args: list, limit: int) -> (str, bool):
             title = item[0]
             link = item[1]
             author = await client.get_entity(int(item[2]))
-            rep += f'\n{title} 链接：{link} 发起者：#{author.username}'
+            money = float(item[3])
+            fDate = item[4]
+            status = int(item[5])
+            if limit is not None and limit == status:
+                continue
+            strStatus = '未发车'
+            if status:
+                strStatus = '已发车'
+            _id = item[6]
+            num = int(db.getNumById(_id)) + 1
+            avgMoney = format(money / num, '.2f')
+            rep += f'\n编号{_id} {title} {link} 发起者：#{author.username} 总金额：{money}元 发车日期：{fDate} {strStatus} 上车人数：{num} 预估金额：{avgMoney}'
         return rep, True
 
 

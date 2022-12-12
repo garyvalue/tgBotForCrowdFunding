@@ -135,9 +135,12 @@ class ReadSQL:
         self.cur.execute(
             'select title from "sponsor" where id="%s"' % _id)
         return self.cur.fetchone()[0]
-
+    def getStatusById(self, _id) -> str:
+        self.cur.execute(
+            'select status from "sponsor" where id="%s"' % _id)
+        return self.cur.fetchone()[0]
     def getNumById(self, _id) -> str:
-        self.cur.execute('select count(*) from join where id="%s"')
+        self.cur.execute('select count(*) from "join" where id="%s"' % _id)
         return self.cur.fetchone()[0]
 
     def getItemByWd(self, wd: str):
