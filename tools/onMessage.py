@@ -147,14 +147,14 @@ async def getItemByWd(args: list, limit: int) -> (str, bool):
             author = await client.get_entity(int(item[2]))
             money = float(item[3])
             fDate = item[4]
-            status = int(item[5])
+            num = int(item[5])
+            status = int(item[6])
             if limit is not None and limit == status:
                 continue
             strStatus = '未发车'
             if status:
                 strStatus = '已发车'
-            _id = item[6]
-            num = int(db.getNumById(_id)) + 1
+            _id = item[7]
             avgMoney = format(money / num, '.2f')
             rep += f'\n编号{_id} {title} {link} 发起者：#{author.username} 总金额：{money}元 发车日期：{fDate} {strStatus} 上车人数：{num} 预估金额：{avgMoney}'
         return rep, True

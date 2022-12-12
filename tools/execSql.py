@@ -105,6 +105,7 @@ class ReadSQL:
     def joinItem(self, _id: int, user_id: str) -> (bool, str):
         try:
             self.cur.execute(const.joinItemSql % (_id, user_id))
+            self.cur.execute(const.setJoinNumSql % (int(self.getNumById(_id)) + 1, _id))
             self.conn.commit()
         except sqlite3.IntegrityError as e:
             return False, repr(e)
@@ -135,10 +136,12 @@ class ReadSQL:
         self.cur.execute(
             'select title from "sponsor" where id="%s"' % _id)
         return self.cur.fetchone()[0]
+
     def getStatusById(self, _id) -> str:
         self.cur.execute(
             'select status from "sponsor" where id="%s"' % _id)
         return self.cur.fetchone()[0]
+
     def getNumById(self, _id) -> str:
         self.cur.execute('select count(*) from "join" where id="%s"' % _id)
         return self.cur.fetchone()[0]
