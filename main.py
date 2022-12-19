@@ -83,6 +83,9 @@ async def onAction(text: str, user_id: str) -> str:
         if status:
             userList = onMessage.getAllJoinById(fullCmd[1:])
             await notifyFinish(fullCmd[1:], userList)
+    elif cmd == '#批量发车':
+        #TODO 格式校验
+        pass
     elif cmd == '#我发起的众筹':
         reply, status = onMessage.getAllItem(fullCmd[1:], user_id)
     elif cmd == '#参加众筹' or cmd == '#参与众筹':
